@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class BSPNode {
@@ -14,12 +16,15 @@ public class BSPNode {
     private BSPNode left;
     private BSPNode right;
 
+    private StairType stairType = StairType.NONE;
+
     private static final int MIN_SIZE = 10;
     private final Random random = new Random();
 
     private boolean verticalSplit;
     private boolean canSplit;
 
+    // BSP木の生成
     public BSPNode(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
@@ -42,79 +47,7 @@ public class BSPNode {
         }
     }
 
-    public void writeMap(String[][] map) {
-        this.map = map;
-        if (canSplit) {
-            left.writeMap(map);
-            right.writeMap(map);
-            carveStreet();
-        } else {
-            carveRoom();
-        }
-    }
-
-    private void carveStreet() {
-        int leftCenterX = left.xCenter;
-        int leftCenterY = left.yCenter;
-        int rightCenterX = right.xCenter;
-        int rightCenterY = right.yCenter;
-        int averageX = (leftCenterX + rightCenterX) / 2;
-        int averageY = (leftCenterY + rightCenterY) / 2;
-
-        if (!verticalSplit) {
-            int currentY = leftCenterY;
-            while (currentY != averageY) {
-                map[leftCenterX][currentY] = ".";
-                currentY++;
-            }
-
-            currentY = rightCenterY;
-            while (currentY != averageY) {
-                map[rightCenterX][currentY] = ".";
-                currentY--;
-            }
-
-            for (int currentX = Math.min(leftCenterX, rightCenterX);
-                    currentX <= Math.max(leftCenterX, rightCenterX);
-                    currentX++) {
-                map[currentX][currentY] = ".";
-            }
-
-        } else {
-            int currentX= leftCenterX;
-            while (currentX != averageX) {
-                map[currentX][leftCenterY] = ".";
-                currentX++;
-            }
-
-            currentX = rightCenterX;
-            while (currentX != averageX) {
-                map[currentX][rightCenterY] = ".";
-                currentX--;
-            }
-
-            for (int currentY = Math.min(leftCenterY, rightCenterY);
-                    currentY <= Math.max(leftCenterY, rightCenterY);
-                    currentY++) {
-                map[averageX][currentY] = ".";
-            }
-        }
-    }
-
-    private void carveRoom() {
-        int pad = random.nextInt(4)+1;
-        int roomX = x + pad;
-        int roomY = y + pad;
-        int roomW = w - pad * 2;
-        int roomH = h - pad * 2;
-
-        for (int col = roomX; col < Math.min(map.length, roomX + roomW); col++) {
-            for (int row = roomY; row < Math.min(map[col].length, roomY + roomH); row++) {
-                map[col][row] = ".";
-            }
-        }
-    }
-
+    // 部屋の分割
     private boolean split() {
         boolean canSplitW = w >= MIN_SIZE * 2;
         boolean canSplitH = h >= MIN_SIZE * 2;
@@ -164,4 +97,119 @@ public class BSPNode {
         left = new BSPNode(x, y, w, topH);
         right = new BSPNode(x, y + topH, w, bottomH);
     }
+
+    // 葉ノードの収集
+    public List<BSPNode> getLeafNodes() {
+        List<BSPNode> leafNodes = new ArrayList<>();
+        collectLeafNodes(leafNodes);
+        return leafNodes;
+    }
+
+    private void collectLeafNodes(List<BSPNode> leafNodes) {
+        if (canSplit) {
+            left.collectLeafNodes(leafNodes);
+            right.collectLeafNodes(leafNodes);
+        } else {
+            leafNodes.add(this);
+        }
+    }
+
+    public void setStairType(StairType stairType) {
+        this.stairType = stairType;
+    }
+
+    // Mapの書きだし
+    public String[][] writeTileMap(String[][] map) {
+        this.map = map;
+        if (canSplit) {
+            left.writeTileMap(map);
+            right.writeTileMap(map);
+            carveStreet();
+        } else {
+            carveRoom();
+        }
+        return map;
+    }
+
+    // 階段の書きだし
+    public void writeStairTiles(String[][] map) {
+        if (canSplit) {
+            left.writeStairTiles(map);
+            right.writeStairTiles(map);
+        } else if (stairType == StairType.UP) {
+            map[xCenter][yCenter] = "<";
+        } else if (stairType == StairType.DOWN) {
+            map[xCenter][yCenter] = ">";
+        }
+    }
+
+    //通路のmap書きだし
+    private void carveStreet() {
+        int leftCenterX = left.xCenter;
+        int leftCenterY = left.yCenter;
+        int rightCenterX = right.xCenter;
+        int rightCenterY = right.yCenter;
+        int averageX = (leftCenterX + rightCenterX) / 2;
+        int averageY = (leftCenterY + rightCenterY) / 2;
+
+        if (!verticalSplit) {
+            int currentY = leftCenterY;
+            while (currentY != averageY) {
+                map[leftCenterX][currentY] = ".";
+                currentY++;
+            }
+
+            currentY = rightCenterY;
+            while (currentY != averageY) {
+                map[rightCenterX][currentY] = ".";
+                currentY--;
+            }
+
+            for (int currentX = Math.min(leftCenterX, rightCenterX);
+                    currentX <= Math.max(leftCenterX, rightCenterX);
+                    currentX++) {
+                map[currentX][currentY] = ".";
+            }
+
+        } else {
+            int currentX= leftCenterX;
+            while (currentX != averageX) {
+                map[currentX][leftCenterY] = ".";
+                currentX++;
+            }
+
+            currentX = rightCenterX;
+            while (currentX != averageX) {
+                map[currentX][rightCenterY] = ".";
+                currentX--;
+            }
+
+            for (int currentY = Math.min(leftCenterY, rightCenterY);
+                    currentY <= Math.max(leftCenterY, rightCenterY);
+                    currentY++) {
+                map[averageX][currentY] = ".";
+            }
+        }
+    }
+
+    //部屋のmap書きだし
+    private void carveRoom() {
+        int pad = random.nextInt(4)+1;
+        int roomX = x + pad;
+        int roomY = y + pad;
+        int roomW = w - pad * 2;
+        int roomH = h - pad * 2;
+
+        for (int col = roomX; col < Math.min(map.length, roomX + roomW); col++) {
+            for (int row = roomY; row < Math.min(map[col].length, roomY + roomH); row++) {
+                map[col][row] = ".";
+            }
+        }
+    }
+}
+
+enum StairType {
+    NONE,
+    UP,
+    DOWN
 }
