@@ -153,7 +153,7 @@ public class BSP {
                         g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     } else if (".".equals(mapValue)) {
                         g.fillRoundRect(x * TILE_SIZE + 1, y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2, 3, 3);
-                    //以降に追加
+                    }
                 }
             }
             g.dispose();
